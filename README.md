@@ -1,6 +1,6 @@
 # Houston::Releases
 
-TODO: Summary of Houston Releases.
+Generates Release Notes automatically from commit messages
 
 
 ## Installation
