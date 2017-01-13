@@ -1,4 +1,6 @@
 module Houston::Releases
-  class ApplicationController < ActionController::Base
+  class ApplicationController < ::ApplicationController
+    layout "houston/releases/application"
+    helper "houston/releases/release"
   end
 end

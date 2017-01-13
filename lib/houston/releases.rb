@@ -22,30 +22,40 @@ module Houston
 
 
   # Register events that will be raised by this module
-  #
-  #    register_events {{
-  #      "releases:create" => params("releases").desc("Releases was created"),
-  #      "releases:update" => params("releases").desc("Releases was updated")
-  #    }}
-
-
-  # Add a link to Houston's global navigation
-  #
-  #    add_navigation_renderer :releases do
-  #      name "Releases"
-  #      icon "fa-thumbs-up"
-  #      path { Houston::Releases::Engine.routes.url_helpers.releases_path }
-  #      ability { |ability| ability.can? :read, Project }
-  #    end
+  register_events {{
+    "release:create"  => params("release").desc("A new release was created")
+  }}
 
 
   # Add a link to feature that can be turned on for projects
-  #
-  #    add_project_feature :releases do
-  #      name "Releases"
-  #      icon "fa-thumbs-up"
-  #      path { |project| Houston::Releases::Engine.routes.url_helpers.project_releases_path(project) }
-  #      ability { |ability, project| ability.can? :read, project }
-  #    end
+  Houston.add_project_feature :releases do
+    name "Releases"
+    path { |project| Houston::Releases::Engine.routes.url_helpers.releases_path(project) }
+    ability { |ability, project| ability.can?(:read, project.releases.build) }
+
+    field "releases.environments" do
+      name "Environments"
+      html do |f|
+        if @project.environments.none?
+          ""
+        else
+          html = <<-HTML
+          <p class="instructions">
+            Generate release notes for these environments:
+          </p>
+          HTML
+          @project.environments.each do |environment|
+            id = :"releases.ignore.#{environment}"
+            value = f.object.public_send(id) || "0"
+            html << f.label(id, class: "checkbox") do
+              f.check_box(id, {checked: value == "0"}, "0", "1") +
+              " #{environment.titleize}"
+            end
+          end
+          html
+        end
+      end
+    end
+  end
 
 end

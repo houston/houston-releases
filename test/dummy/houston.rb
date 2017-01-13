@@ -12,12 +12,11 @@ Houston.config do
   host "houston.test.com"
   mailer_sender "houston@test.com"
 
-  # Houston still hard-codes knowledge of these Roles.
-  # This will eventually be refactored away.
-  roles "Developer", "Tester"
-  project_roles "Maintainer"
-
   # Mount this module on the dummy Houston application.
-  use :releases
+  use :releases do
+    change_tags( {name: "New Feature", as: "feature", color: "8DB500"},
+                 {name: "Improvement", as: "improvement", color: "3383A8", aliases: %w{enhancement}},
+                 {name: "Bugfix", as: "fix", color: "C64537", aliases: %w{bugfix}} )
+  end
 
 end
