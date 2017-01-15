@@ -19,6 +19,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "houston-core", ">= 0.8.0.pre"
   spec.add_dependency "nested_editor_for", "~> 0.1.1"
+  spec.add_dependency "record_tag_helper", "~> 1.0" # to keep using div_for
 
   spec.add_development_dependency "bundler", "~> 1.11.2"
   spec.add_development_dependency "rake", "~> 10.0"

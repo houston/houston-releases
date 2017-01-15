@@ -1,6 +1,7 @@
 require "houston/releases/commit_ext"
 require "houston/releases/deploy_ext"
 require "houston/releases/project_ext"
+require "record_tag_helper"
 
 module Houston
   module Releases
