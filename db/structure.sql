@@ -194,6 +194,16 @@ CREATE TABLE commits_pull_requests (
 
 
 --
+-- Name: commits_releases; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE commits_releases (
+    commit_id integer,
+    release_id integer
+);
+
+
+--
 -- Name: commits_tasks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -570,6 +580,48 @@ ALTER SEQUENCE pull_requests_id_seq OWNED BY pull_requests.id;
 
 
 --
+-- Name: releases; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE releases (
+    id integer NOT NULL,
+    name character varying,
+    commit0 character varying,
+    commit1 character varying,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    user_id integer NOT NULL,
+    message text DEFAULT ''::text NOT NULL,
+    deploy_id integer,
+    project_id integer DEFAULT '-1'::integer NOT NULL,
+    environment_name character varying DEFAULT 'Production'::character varying NOT NULL,
+    release_changes text DEFAULT ''::text NOT NULL,
+    commit_before_id integer,
+    commit_after_id integer,
+    search_vector tsvector
+);
+
+
+--
+-- Name: releases_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE releases_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: releases_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE releases_id_seq OWNED BY releases.id;
+
+
+--
 -- Name: releases_tasks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -921,11 +973,8 @@ CREATE TABLE tickets (
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
     remote_id integer,
-    deployment character varying,
-    last_release_at timestamp without time zone,
     expires_at timestamp without time zone,
     extended_attributes hstore DEFAULT ''::hstore NOT NULL,
-    antecedents text[],
     tags character varying[],
     type character varying,
     closed_at timestamp without time zone,
@@ -933,11 +982,9 @@ CREATE TABLE tickets (
     reporter_id integer,
     milestone_id integer,
     destroyed_at timestamp without time zone,
-    resolution character varying DEFAULT ''::character varying NOT NULL,
-    first_release_at timestamp without time zone,
     priority character varying DEFAULT 'normal'::character varying NOT NULL,
-    reopened_at timestamp without time zone,
-    prerequisites integer[]
+    props jsonb DEFAULT '{}'::jsonb,
+    due_date date
 );
 
 
@@ -1180,6 +1227,13 @@ ALTER TABLE ONLY pull_requests ALTER COLUMN id SET DEFAULT nextval('pull_request
 
 
 --
+-- Name: releases id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY releases ALTER COLUMN id SET DEFAULT nextval('releases_id_seq'::regclass);
+
+
+--
 -- Name: roles id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1375,6 +1429,14 @@ ALTER TABLE ONLY pull_requests
 
 
 --
+-- Name: releases releases_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY releases
+    ADD CONSTRAINT releases_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1538,6 +1600,13 @@ CREATE UNIQUE INDEX index_commits_pull_requests_on_commit_id_and_pull_request_id
 
 
 --
+-- Name: index_commits_releases_on_commit_id_and_release_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_commits_releases_on_commit_id_and_release_id ON commits_releases USING btree (commit_id, release_id);
+
+
+--
 -- Name: index_commits_tasks_on_commit_id_and_task_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1657,6 +1726,34 @@ CREATE UNIQUE INDEX index_pull_requests_on_project_id_and_number ON pull_request
 
 
 --
+-- Name: index_releases_on_deploy_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_releases_on_deploy_id ON releases USING btree (deploy_id);
+
+
+--
+-- Name: index_releases_on_project_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_releases_on_project_id ON releases USING btree (project_id);
+
+
+--
+-- Name: index_releases_on_project_id_and_environment_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_releases_on_project_id_and_environment_name ON releases USING btree (project_id, environment_name);
+
+
+--
+-- Name: index_releases_on_search_vector; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_releases_on_search_vector ON releases USING gin (search_vector);
+
+
+--
 -- Name: index_releases_tasks_on_release_id_and_task_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1762,13 +1859,6 @@ CREATE INDEX index_tickets_on_milestone_id ON tickets USING btree (milestone_id)
 
 
 --
--- Name: index_tickets_on_resolution; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_tickets_on_resolution ON tickets USING btree (resolution);
-
-
---
 -- Name: index_users_on_authentication_token; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1861,6 +1951,8 @@ SET search_path TO "$user", public;
 INSERT INTO schema_migrations (version) VALUES
 ('20120324185914'),
 ('20120324202224'),
+('20120324212848'),
+('20120324212946'),
 ('20120324230038'),
 ('20120406185643'),
 ('20120408155047'),
@@ -1878,6 +1970,8 @@ INSERT INTO schema_migrations (version) VALUES
 ('20120626152020'),
 ('20120626152949'),
 ('20120715230922'),
+('20120716010743'),
+('20120726212620'),
 ('20120726231754'),
 ('20120804003344'),
 ('20120823025935'),
@@ -1888,6 +1982,8 @@ INSERT INTO schema_migrations (version) VALUES
 ('20120922010212'),
 ('20121026014457'),
 ('20121027160548'),
+('20121027171215'),
+('20121104233305'),
 ('20121126005019'),
 ('20121214025558'),
 ('20121219202734'),
@@ -1897,6 +1993,7 @@ INSERT INTO schema_migrations (version) VALUES
 ('20121222223635'),
 ('20121224212623'),
 ('20121225175106'),
+('20121225175107'),
 ('20121230173644'),
 ('20121230174234'),
 ('20130105200429'),
@@ -1940,6 +2037,7 @@ INSERT INTO schema_migrations (version) VALUES
 ('20130711004558'),
 ('20130711013156'),
 ('20130728191005'),
+('20130806143651'),
 ('20130815232527'),
 ('20130914152419'),
 ('20130914155044'),
@@ -1963,9 +2061,12 @@ INSERT INTO schema_migrations (version) VALUES
 ('20140217195942'),
 ('20140327020121'),
 ('20140406183224'),
+('20140406230121'),
 ('20140411214022'),
 ('20140418133005'),
 ('20140419152214'),
+('20140425141946'),
+('20140427235508'),
 ('20140428023146'),
 ('20140429000919'),
 ('20140515174322'),
@@ -1975,12 +2076,15 @@ INSERT INTO schema_migrations (version) VALUES
 ('20140517012626'),
 ('20140521014652'),
 ('20140526155845'),
+('20140526162645'),
 ('20140526180608'),
+('20140526180609'),
 ('20140606232907'),
 ('20140806233301'),
 ('20140810224209'),
 ('20140824194031'),
 ('20140824194526'),
+('20140907012329'),
 ('20140907013836'),
 ('20140921201441'),
 ('20140925021043'),
@@ -2010,6 +2114,7 @@ INSERT INTO schema_migrations (version) VALUES
 ('20150817232311'),
 ('20150820023708'),
 ('20150902005758'),
+('20150902005759'),
 ('20150902010629'),
 ('20150902010853'),
 ('20150927014445'),
@@ -2023,7 +2128,10 @@ INSERT INTO schema_migrations (version) VALUES
 ('20151205214647'),
 ('20151209004458'),
 ('20151209030113'),
+('20151226154901'),
+('20151226155305'),
 ('20151228183704'),
+('20151228183705'),
 ('20160120145757'),
 ('20160317140151'),
 ('20160419230411'),
@@ -2044,6 +2152,13 @@ INSERT INTO schema_migrations (version) VALUES
 ('20160916191300'),
 ('20161102012059'),
 ('20161102012231'),
-('20170113164126');
+('20170113164126'),
+('20170113223920'),
+('20170113224431'),
+('20170113225759'),
+('20170113230723'),
+('20170113230944'),
+('20170113231303'),
+('20170113232119');
 
 
