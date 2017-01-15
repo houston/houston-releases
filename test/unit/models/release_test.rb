@@ -4,7 +4,7 @@ class ReleaseTest < ActiveSupport::TestCase
   attr_reader :release, :project
 
   setup do
-    @project = Project.new(name: "Test", slug: "test", version_control_name: "Mock")
+    @project = Project.new(name: "Test", slug: "test", props: {"adapter.versionControl" => "Mock"})
   end
 
 

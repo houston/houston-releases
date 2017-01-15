@@ -15,8 +15,9 @@ class CreatingAReleaseTest < ActionDispatch::IntegrationTest
       team: Team.first,
       name: "Test",
       slug: "test",
-      version_control_name: "Git",
-      props:  {"git.location" => Rails.root.join("test", "data", "bare_repo.git").to_s})
+      props: {
+        "adapter.versionControl" => "Git",
+        "git.location" => Rails.root.join("test", "data", "bare_repo.git").to_s})
 
     visit "/users/sign_in"
     fill_in "user_email", with: @user.email
