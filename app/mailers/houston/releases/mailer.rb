@@ -14,7 +14,7 @@ module Houston
         mail({
           from:     release.user,
           to:       options.fetch(:to, @release.notification_recipients),
-          subject:  "new release to #{release.environment_name}",
+          subject:  "#{@project.name}: new release to #{release.environment_name}",
           template: "houston/releases/mailer/new_release"
         })
       end
@@ -37,7 +37,7 @@ module Houston
 
         mail({
           to:       @maintainer,
-          subject:  "deploy to #{deploy.environment_name} complete. Click to Release!",
+          subject:  "#{@project.name}: deploy to #{deploy.environment_name} complete. Click to Release!",
           template: "houston/releases/mailer/new_release"
         })
       end
