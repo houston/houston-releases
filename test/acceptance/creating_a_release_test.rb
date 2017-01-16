@@ -2,7 +2,6 @@ require "test_helper"
 require "houston/commits/test_helpers"
 
 class CreatingAReleaseTest < ActionDispatch::IntegrationTest
-  include Capybara::DSL
   include Houston::Commits::TestHelpers
   attr_reader :user, :project, :commit0, :commit1
   fixtures :all
@@ -42,7 +41,8 @@ class CreatingAReleaseTest < ActionDispatch::IntegrationTest
 
     should "show all the commits" do
       project.commits.between(commit0, commit1).each do |commit|
-        assert page.has_content?(commit.summary), "Expected to find commit #{commit} on the page"
+        assert page.has_content?(commit.clean_message),
+          "Expected to find commit #{commit.clean_message.inspect} on the page"
       end
     end
 
