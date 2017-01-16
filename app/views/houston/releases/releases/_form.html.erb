@@ -76,21 +76,19 @@
   </fieldset>
 <% end %>
 
-<% content_for :javascripts do %>
-  <script type="text/javascript">
-    $(function() {
-      $('[data-expand]').click(function(e) {
-        e.preventDefault();
+<script type="text/javascript">
+  $(function() {
+    $('[data-expand]').click(function(e) {
+      e.preventDefault();
 
-        var $a = $(this),
-            $target = $('#' + $a.attr('data-expand'));
-        if($target.length) {
-          $a.hide();
-          $target.slideDown(200, function() {
-            $target.find('textarea').autosize();
-          });
-        }
-      });
+      var $a = $(this),
+          $target = $('#' + $a.attr('data-expand'));
+      if($target.length) {
+        $a.hide();
+        $target.slideDown(200, function() {
+          $target.find('textarea').autosize();
+        });
+      }
     });
-  </script>
-<% end %>
+  });
+</script>
