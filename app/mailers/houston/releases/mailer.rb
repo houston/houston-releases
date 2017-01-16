@@ -1,7 +1,7 @@
 module Houston
   module Releases
     class Mailer < ViewMailer
-      helper ReleaseHelper
+      helper Houston::Releases::ReleaseHelper
 
       self.stylesheets = stylesheets + %w{
         houston/releases/releases.scss

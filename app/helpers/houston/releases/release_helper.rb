@@ -1,6 +1,7 @@
 module Houston
   module Releases
-      module ReleaseHelper
+    module ReleaseHelper
+      include Houston::Commits::CommitHelper
 
       def link_to_release_commit_range(release)
         return "" if release.commit0.blank? && release.commit1.blank?
@@ -63,13 +64,14 @@ module Houston
         message
       end
 
-      # NB: assumes use of ticket_tracker
       def format_with_tickets_linked(project, message)
         message = h(message)
 
-        message.gsub! Commit::TICKET_PATTERN do |match|
-          ticket_number = Commit::TICKET_PATTERN.match(match)[1]
-          link_to match, project.ticket_tracker_ticket_url(ticket_number), "target" => "_blank", "rel" => "ticket", "data-number" => ticket_number
+        if project.respond_to?(:ticket_tracker_ticket_url)
+          message.gsub! Commit::TICKET_PATTERN do |match|
+            ticket_number = Commit::TICKET_PATTERN.match(match)[1]
+            link_to match, project.ticket_tracker_ticket_url(ticket_number), "target" => "_blank", "rel" => "ticket", "data-number" => ticket_number
+          end
         end
 
         message.gsub! Commit::EXTRA_ATTRIBUTE_PATTERN do |match|

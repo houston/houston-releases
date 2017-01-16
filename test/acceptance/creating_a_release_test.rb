@@ -1,7 +1,9 @@
 require "test_helper"
+require "houston/commits/test_helpers"
 
 class CreatingAReleaseTest < ActionDispatch::IntegrationTest
   include Capybara::DSL
+  include Houston::Commits::TestHelpers
   attr_reader :user, :project, :commit0, :commit1
   fixtures :all
 
@@ -15,9 +17,7 @@ class CreatingAReleaseTest < ActionDispatch::IntegrationTest
       team: Team.first,
       name: "Test",
       slug: "test",
-      props: {
-        "adapter.versionControl" => "Git",
-        "git.location" => Rails.root.join("test", "data", "bare_repo.git").to_s})
+      props: { "adapter.versionControl" => "Git", "git.location" => bare_repo_path })
 
     visit "/users/sign_in"
     fill_in "user_email", with: @user.email

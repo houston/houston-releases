@@ -5,6 +5,10 @@ module Houston
   module Releases
     extend self
 
+    def dependencies
+      [ :commits ]
+    end
+
     def config(&block)
       @configuration ||= Releases::Configuration.new
       @configuration.instance_eval(&block) if block_given?
