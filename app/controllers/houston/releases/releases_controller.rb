@@ -38,7 +38,7 @@ module Houston
         @release.release_changes = [Houston::Releases::ReleaseChange.new(@release, "", "")] if @release.release_changes.none?
 
         if request.headers["X-PJAX"]
-          render template: "releases/_new_release", layout: false
+          render template: "houston/releases/releases/_new_release", layout: false
         else
           render
         end
