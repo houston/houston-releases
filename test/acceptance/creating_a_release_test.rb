@@ -19,6 +19,7 @@ class CreatingAReleaseTest < ActionDispatch::IntegrationTest
       slug: "test",
       props: { "adapter.versionControl" => "Git", "git.location" => bare_repo_path })
 
+    Capybara.reset_sessions!
     visit "/users/sign_in"
     fill_in "user_email", with: @user.email
     fill_in "user_password", with: "password"
