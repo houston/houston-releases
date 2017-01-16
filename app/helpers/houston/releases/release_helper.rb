@@ -56,6 +56,34 @@ module Houston
         "<div class=\"change-tag\" style=\"background-color: ##{tag.color};\">#{tag.name}</div>".html_safe
       end
 
+      def format_commit(commit)
+        message = commit.summary
+        message = format_with_tickets_linked(commit.project, message)
+        message = mdown(message)
+        message
+      end
+
+      # NB: assumes use of ticket_tracker
+      def format_with_tickets_linked(project, message)
+        message = h(message)
+
+        message.gsub! Commit::TICKET_PATTERN do |match|
+          ticket_number = Commit::TICKET_PATTERN.match(match)[1]
+          link_to match, project.ticket_tracker_ticket_url(ticket_number), "target" => "_blank", "rel" => "ticket", "data-number" => ticket_number
+        end
+
+        message.gsub! Commit::EXTRA_ATTRIBUTE_PATTERN do |match|
+          key, value = match.scan(Commit::EXTRA_ATTRIBUTE_PATTERN).first
+          format_extra_attribute(key, value)
+        end
+
+        message.html_safe
+      end
+
+      def format_extra_attribute(key, value)
+        "<span class=\"commit-extra-attribute\"><span class=\"commit-extra-attribute-key\">#{key}</span><span class=\"commit-extra-attribute-value\">#{value}</span></span>"
+      end
+
     end
   end
 end
