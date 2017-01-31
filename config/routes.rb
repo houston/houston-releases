@@ -13,7 +13,7 @@ Houston::Releases::Engine.routes.draw do
 
   get "releases/:id", to: "releases#show", as: :release
   get "releases/:id/edit", to: "releases#edit", as: :edit_release
-  put "releases/:id", to: "releases#update"
+  match "releases/:id", to: "releases#update", via: [:put, :patch]
   delete "releases/:id", to: "releases#destroy"
 
 end
