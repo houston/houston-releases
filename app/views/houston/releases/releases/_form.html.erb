@@ -22,10 +22,7 @@
       <%= f.label :release_changes, "Changes", :class => "control-label" %>
       <div class="controls changes-nested-editor row-fluid">
         <p class="instructions">Describe, in users&rsquo; terms, what this release changes</p>
-        <%= f.nested_editor_for :release_changes do |f| -%>
-          <div class="change-tag span3"><%= f.collection_select :tag_slug, Houston::Releases.config.change_tags, :slug, :name %></div>
-          <div class="change-description span8"><%= f.text_field :description, maxlength: 255 %></div>
-        <% end -%>
+        <div id="release_changes" class="changes-nested-editor nested editor"></div>
       </div>
     </div>
 
@@ -76,19 +73,29 @@
   </fieldset>
 <% end %>
 
-<script type="text/javascript">
-  $(function() {
-    $('[data-expand]').click(function(e) {
-      e.preventDefault();
+<% content_for :javascripts do %>
+  <script type="text/javascript">
+    $(function() {
+      new Houston.Releases.ChangesView({
+        el: $('#release_changes')[0],
+        tags: <%=raw Houston::Releases.config.change_tags.map { |tag| { slug: tag.slug, name: tag.name } }.to_json %>,
+        values: <%=raw @release.release_changes.map { |change| { tagSlug: change.tag_slug, description: change.description } }.to_json %>
+      }).render();
 
-      var $a = $(this),
-          $target = $('#' + $a.attr('data-expand'));
-      if($target.length) {
-        $a.hide();
-        $target.slideDown(200, function() {
-          $target.find('textarea').autosize();
-        });
-      }
+      $('[data-expand]').click(function(e) {
+        e.preventDefault();
+
+        var $a = $(this),
+            $target = $('#' + $a.attr('data-expand'));
+        if($target.length) {
+          $a.hide();
+          $target.slideDown(200, function() {
+            $target.find('textarea').autosize();
+          });
+        }
+      });
     });
-  });
-</script>
+  </script>
+<% end %>
+
+<%= yield :javascripts if request.headers["X-PJAX"] %>

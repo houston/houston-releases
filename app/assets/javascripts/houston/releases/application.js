@@ -11,4 +11,8 @@
 // GO AFTER THE REQUIRES BELOW.
 //
 //= require jquery.pjax.js
+//= require_tree ../../../templates
+//= require_self
 //= require_tree .
+
+window.Houston.Releases = {}

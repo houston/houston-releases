@@ -18,7 +18,6 @@ Gem::Specification.new do |spec|
   spec.test_files = Dir["test/**/*"]
 
   spec.add_dependency "houston-core", ">= 0.8.0.pre"
-  spec.add_dependency "nested_editor_for", "~> 0.1.1"
   spec.add_dependency "record_tag_helper", "~> 1.0" # to keep using div_for
 
   spec.add_development_dependency "bundler", "~> 1.11.2"

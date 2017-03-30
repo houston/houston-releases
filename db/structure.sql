@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.0
--- Dumped by pg_dump version 9.6.0
+-- Dumped from database version 9.6.2
+-- Dumped by pg_dump version 9.6.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -26,20 +26,6 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 --
 
 COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
---
--- Name: hstore; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS hstore WITH SCHEMA public;
-
-
---
--- Name: EXTENSION hstore; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION hstore IS 'data type for storing sets of (key, value) pairs';
 
 
 SET search_path = public, pg_catalog;
@@ -66,12 +52,13 @@ SET default_with_oids = false;
 CREATE TABLE actions (
     id integer NOT NULL,
     name character varying NOT NULL,
-    started_at timestamp without time zone NOT NULL,
+    started_at timestamp without time zone,
     finished_at timestamp without time zone,
     succeeded boolean,
     error_id integer,
     trigger character varying,
-    params text
+    params text,
+    created_at timestamp without time zone NOT NULL
 );
 
 
@@ -112,8 +99,6 @@ CREATE TABLE ar_internal_metadata (
 
 CREATE TABLE authorizations (
     id integer NOT NULL,
-    name character varying NOT NULL,
-    provider_id integer,
     scope character varying,
     access_token character varying,
     refresh_token character varying,
@@ -121,7 +106,10 @@ CREATE TABLE authorizations (
     expires_in integer,
     expires_at timestamp without time zone,
     created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    updated_at timestamp without time zone,
+    user_id integer NOT NULL,
+    props jsonb DEFAULT '{}'::jsonb,
+    type character varying NOT NULL
 );
 
 
@@ -234,43 +222,6 @@ CREATE TABLE commits_users (
 
 
 --
--- Name: consumer_tokens; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE consumer_tokens (
-    id integer NOT NULL,
-    user_id integer,
-    type character varying(30),
-    token character varying(1024),
-    refresh_token character varying,
-    secret character varying,
-    expires_at integer,
-    expires_in character varying,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone
-);
-
-
---
--- Name: consumer_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE consumer_tokens_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: consumer_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE consumer_tokens_id_seq OWNED BY consumer_tokens.id;
-
-
---
 -- Name: deploys; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -346,6 +297,36 @@ ALTER SEQUENCE errors_id_seq OWNED BY errors.id;
 
 
 --
+-- Name: follows; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE follows (
+    id integer NOT NULL,
+    user_id integer,
+    project_id integer
+);
+
+
+--
+-- Name: follows_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE follows_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: follows_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE follows_id_seq OWNED BY follows.id;
+
+
+--
 -- Name: measurements; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -392,7 +373,6 @@ CREATE TABLE milestones (
     name character varying NOT NULL,
     tickets_count integer DEFAULT 0,
     completed_at timestamp without time zone,
-    extended_attributes hstore DEFAULT ''::hstore NOT NULL,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
     destroyed_at timestamp without time zone,
@@ -420,42 +400,6 @@ ALTER SEQUENCE milestones_id_seq OWNED BY milestones.id;
 
 
 --
--- Name: oauth_providers; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE oauth_providers (
-    id integer NOT NULL,
-    name character varying NOT NULL,
-    site character varying NOT NULL,
-    authorize_path character varying NOT NULL,
-    token_path character varying NOT NULL,
-    client_id character varying NOT NULL,
-    client_secret character varying NOT NULL,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone
-);
-
-
---
--- Name: oauth_providers_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE oauth_providers_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: oauth_providers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE oauth_providers_id_seq OWNED BY oauth_providers.id;
-
-
---
 -- Name: persistent_triggers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -464,7 +408,8 @@ CREATE TABLE persistent_triggers (
     type character varying NOT NULL,
     value text NOT NULL,
     params text DEFAULT '{}'::text NOT NULL,
-    action character varying NOT NULL
+    action character varying NOT NULL,
+    user_id integer NOT NULL
 );
 
 
@@ -497,7 +442,7 @@ CREATE TABLE projects (
     slug character varying NOT NULL,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
-    color character varying DEFAULT 'default'::character varying NOT NULL,
+    color_name character varying DEFAULT 'default'::character varying NOT NULL,
     retired_at timestamp without time zone,
     category character varying,
     version_control_name character varying DEFAULT 'None'::character varying NOT NULL,
@@ -622,26 +567,6 @@ ALTER SEQUENCE releases_id_seq OWNED BY releases.id;
 
 
 --
--- Name: releases_tasks; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE releases_tasks (
-    release_id integer,
-    task_id integer
-);
-
-
---
--- Name: releases_tickets; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE releases_tickets (
-    release_id integer,
-    ticket_id integer
-);
-
-
---
 -- Name: roles; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -681,36 +606,6 @@ ALTER SEQUENCE roles_id_seq OWNED BY roles.id;
 CREATE TABLE schema_migrations (
     version character varying NOT NULL
 );
-
-
---
--- Name: settings; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE settings (
-    id integer NOT NULL,
-    name character varying NOT NULL,
-    value character varying NOT NULL
-);
-
-
---
--- Name: settings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE settings_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: settings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE settings_id_seq OWNED BY settings.id;
 
 
 --
@@ -974,7 +869,6 @@ CREATE TABLE tickets (
     updated_at timestamp without time zone,
     remote_id integer,
     expires_at timestamp without time zone,
-    extended_attributes hstore DEFAULT ''::hstore NOT NULL,
     tags character varying[],
     type character varying,
     closed_at timestamp without time zone,
@@ -1067,15 +961,12 @@ CREATE TABLE users (
     invitation_limit integer,
     invited_by_type character varying,
     invited_by_id integer,
-    legacy_role character varying DEFAULT 'Guest'::character varying,
     authentication_token character varying,
-    legacy_administrator boolean DEFAULT false,
     first_name character varying,
     last_name character varying,
     retired_at timestamp without time zone,
     email_addresses text[],
     invitation_created_at timestamp without time zone,
-    environments_subscribed_to text[] DEFAULT '{}'::text[] NOT NULL,
     current_project_id integer,
     nickname character varying,
     username character varying,
@@ -1164,13 +1055,6 @@ ALTER TABLE ONLY commits ALTER COLUMN id SET DEFAULT nextval('commits_id_seq'::r
 
 
 --
--- Name: consumer_tokens id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY consumer_tokens ALTER COLUMN id SET DEFAULT nextval('consumer_tokens_id_seq'::regclass);
-
-
---
 -- Name: deploys id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1185,6 +1069,13 @@ ALTER TABLE ONLY errors ALTER COLUMN id SET DEFAULT nextval('errors_id_seq'::reg
 
 
 --
+-- Name: follows id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY follows ALTER COLUMN id SET DEFAULT nextval('follows_id_seq'::regclass);
+
+
+--
 -- Name: measurements id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1196,13 +1087,6 @@ ALTER TABLE ONLY measurements ALTER COLUMN id SET DEFAULT nextval('measurements_
 --
 
 ALTER TABLE ONLY milestones ALTER COLUMN id SET DEFAULT nextval('milestones_id_seq'::regclass);
-
-
---
--- Name: oauth_providers id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY oauth_providers ALTER COLUMN id SET DEFAULT nextval('oauth_providers_id_seq'::regclass);
 
 
 --
@@ -1238,13 +1122,6 @@ ALTER TABLE ONLY releases ALTER COLUMN id SET DEFAULT nextval('releases_id_seq':
 --
 
 ALTER TABLE ONLY roles ALTER COLUMN id SET DEFAULT nextval('roles_id_seq'::regclass);
-
-
---
--- Name: settings id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY settings ALTER COLUMN id SET DEFAULT nextval('settings_id_seq'::regclass);
 
 
 --
@@ -1357,14 +1234,6 @@ ALTER TABLE ONLY commits
 
 
 --
--- Name: consumer_tokens consumer_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY consumer_tokens
-    ADD CONSTRAINT consumer_tokens_pkey PRIMARY KEY (id);
-
-
---
 -- Name: deploys deploys_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1381,6 +1250,14 @@ ALTER TABLE ONLY errors
 
 
 --
+-- Name: follows follows_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY follows
+    ADD CONSTRAINT follows_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: measurements measurements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1394,14 +1271,6 @@ ALTER TABLE ONLY measurements
 
 ALTER TABLE ONLY milestones
     ADD CONSTRAINT milestones_pkey PRIMARY KEY (id);
-
-
---
--- Name: oauth_providers oauth_providers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY oauth_providers
-    ADD CONSTRAINT oauth_providers_pkey PRIMARY KEY (id);
 
 
 --
@@ -1450,14 +1319,6 @@ ALTER TABLE ONLY roles
 
 ALTER TABLE ONLY schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
-
-
---
--- Name: settings settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY settings
-    ADD CONSTRAINT settings_pkey PRIMARY KEY (id);
 
 
 --
@@ -1572,6 +1433,13 @@ CREATE INDEX index_actions_on_name ON actions USING btree (name);
 
 
 --
+-- Name: index_authorizations_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_authorizations_on_user_id ON authorizations USING btree (user_id);
+
+
+--
 -- Name: index_commits_on_project_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1628,13 +1496,6 @@ CREATE UNIQUE INDEX index_commits_users_on_commit_id_and_user_id ON commits_user
 
 
 --
--- Name: index_consumer_tokens_on_token; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_consumer_tokens_on_token ON consumer_tokens USING btree (token);
-
-
---
 -- Name: index_deploys_on_environment_name; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1653,6 +1514,20 @@ CREATE INDEX index_deploys_on_project_id_and_environment_name ON deploys USING b
 --
 
 CREATE UNIQUE INDEX index_errors_on_sha ON errors USING btree (sha);
+
+
+--
+-- Name: index_follows_on_project_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_follows_on_project_id ON follows USING btree (project_id);
+
+
+--
+-- Name: index_follows_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_follows_on_user_id ON follows USING btree (user_id);
 
 
 --
@@ -1751,20 +1626,6 @@ CREATE INDEX index_releases_on_project_id_and_environment_name ON releases USING
 --
 
 CREATE INDEX index_releases_on_search_vector ON releases USING gin (search_vector);
-
-
---
--- Name: index_releases_tasks_on_release_id_and_task_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_releases_tasks_on_release_id_and_task_id ON releases_tasks USING btree (release_id, task_id);
-
-
---
--- Name: index_releases_tickets_on_release_id_and_ticket_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_releases_tickets_on_release_id_and_ticket_id ON releases_tickets USING btree (release_id, ticket_id);
 
 
 --
@@ -1940,6 +1801,30 @@ CREATE INDEX index_versions_on_user_name ON versions USING btree (user_name);
 --
 
 CREATE INDEX index_versions_on_versioned_id_and_versioned_type ON versions USING btree (versioned_id, versioned_type);
+
+
+--
+-- Name: follows fk_rails_32479bd030; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY follows
+    ADD CONSTRAINT fk_rails_32479bd030 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: authorizations fk_rails_4ecef5b8c5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY authorizations
+    ADD CONSTRAINT fk_rails_4ecef5b8c5 FOREIGN KEY (user_id) REFERENCES users(id);
+
+
+--
+-- Name: follows fk_rails_572bf69092; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY follows
+    ADD CONSTRAINT fk_rails_572bf69092 FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
 
 
 --
@@ -2132,6 +2017,7 @@ INSERT INTO schema_migrations (version) VALUES
 ('20151226155305'),
 ('20151228183704'),
 ('20151228183705'),
+('20151228183708'),
 ('20160120145757'),
 ('20160317140151'),
 ('20160419230411'),
@@ -2159,6 +2045,24 @@ INSERT INTO schema_migrations (version) VALUES
 ('20170113230723'),
 ('20170113230944'),
 ('20170113231303'),
-('20170113232119');
+('20170113232119'),
+('20170115150643'),
+('20170116002818'),
+('20170116210225'),
+('20170118005958'),
+('20170130011016'),
+('20170205004452'),
+('20170206002030'),
+('20170206002732'),
+('20170209022159'),
+('20170213001453'),
+('20170215012012'),
+('20170216041034'),
+('20170226201504'),
+('20170301014051'),
+('20170307032041'),
+('20170307035755'),
+('20170310024505'),
+('20170329030329');
 
 

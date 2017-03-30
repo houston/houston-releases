@@ -48,20 +48,13 @@
 <% content_for :javascripts do %>
 <script type="text/javascript">
   $(function() {
-    NestedEditorFor.init();
-    App.NewReleaseForm.init();
-
     $('form.pjax').submit(function(e) {
       e.preventDefault();
       var $form = $(this),
           url = $form.attr('action') + '?' + $form.serialize();
       $.pjax({
         url: url,
-        container: '#new_release_form',
-        success: function() {
-          NestedEditorFor.updateAll();
-          App.NewReleaseForm.init();
-        }
+        container: '#new_release_form'
       });
       return false;
     });
