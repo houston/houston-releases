@@ -27,7 +27,7 @@ module Houston
 
   # Register events that will be raised by this module
   register_events {{
-    "release:create"  => params("release").desc("A new release was created")
+    "release:create" => params("release").desc("A new release was created")
   }}
 
 
