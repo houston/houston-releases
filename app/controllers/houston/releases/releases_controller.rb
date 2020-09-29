@@ -45,7 +45,7 @@ module Houston
       end
 
       def create
-        @release = @releases.new(params[:release])
+        @release = @releases.new(release_params)
         @release.user = current_user
         authorize! :create, @release
 
@@ -99,7 +99,7 @@ module Houston
       def update
         authorize! :update, @release
 
-        if @release.update_attributes(params[:release])
+        if @release.update_attributes(release_params)
           redirect_to @release, notice: "Release was successfully updated."
         else
           render action: "edit"
@@ -115,6 +115,11 @@ module Houston
       end
 
     private
+
+      def release_params
+        # TODO: Better, stronger params
+        params.require(:release).permit!
+      end
 
       def get_release_and_project
         @release = Houston::Releases::Release.find(params[:id])
